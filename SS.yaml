@@ -1,0 +1,18 @@
+seats:
+  SNP: 4
+  Labour: 1
+  Tory: 4
+  Green: 0
+  Libdem: 0
+  ISP: 0
+    
+list:
+  SNP: 120217
+  Tory: 100753
+  Labour: 56072
+  Green: 14773
+  Libdem: 11775
+  ISP: 0
+
+
+listseats: 8
