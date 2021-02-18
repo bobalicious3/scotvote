@@ -32,8 +32,9 @@ def do_rounds(votes):
        winner = max(votes['dhondt'])
        votes = vote_win(winner,votes)
        votes = dhondt(votes)
-       #print (winner)
+    #pp = pprint.PrettyPrinter(indent=4)
     #pp.pprint(votes)
+    #print (winner)
     return votes
 
 def clear_dhondt(votes):
@@ -46,6 +47,13 @@ def print_votes(votes):
     for party in votes['seats']:
     	print (party,":",votes['seats'][party])
 
+def read_vote_data(configfile):
+    try:
+    	votes = yaml.load(open(configfile),Loader=yaml.FullLoader)
+    except (IOError, err):
+    	print ("bad config file?: %s" % (err))
+    return votes
+
 def main():
 
     parser = argparse.ArgumentParser(description='dhondt calc.')
@@ -55,31 +63,51 @@ def main():
     args = parser.parse_args()
 
     configfile = args.d
-
-    try:
-    	votes = yaml.load(open(configfile),Loader=yaml.FullLoader)
-    except (IOError, err):
-    	print ("bad config file?: %s" % (err))
-    original_data = copy.deepcopy(votes)
-
-    votes = clear_dhondt(votes)
-    votes = do_rounds(votes)
-    print_votes(votes)
-    print ('-----')
-
     list_party = args.p
     list_votes = args.n
 
-    votes = clear_dhondt(original_data)
+    # get data and calc seats
+    votes = read_vote_data(configfile)
+    votes = clear_dhondt(votes)
+    votes = do_rounds(votes)
+    print_votes(votes)
+
+    # two vars for printed output
+    snplist = votes['list']['SNP']
+    startseats = votes['seats'][list_party]
+    print ('-----')
+
+
+    # again, get data and calc seats (with param modifys)
+    votes = read_vote_data(configfile)
+    votes = clear_dhondt(votes)
     if list_party in votes['list']:
     	votes['list'][list_party] = votes['list'][list_party] + int(list_votes)
     else:
     	votes['list'][list_party] = int(list_votes)
     if list_party != 'SNP':
-    	votes['list']['SNP'] = votes['list']['SNP'] - votes['list'][list_party]
+    	votes['list']['SNP'] = votes['list']['SNP'] - int(list_votes)
+    else:
+        # move 80% Labour and 20% Tory to SNP ... if were upping SNP
+        list20 = round(int(list_votes) * 0.2)
+        list80 = round(int(list_votes) * 0.8)
+        votes['list']['Tory'] = votes['list']['Tory'] - list20
+        votes['list']['Labour'] = votes['list']['Labour'] - list80
+        #print(votes['list']['Labour'])
+        #print(votes['list']['Tory'])
     votes = do_rounds(votes)
     print_votes(votes)
+
+    # List is what this is looking at mostly - if it changes
+    endseats = votes['seats'][list_party]
     print ('With ', list_party,':',votes['list'][list_party])
+    if endseats > startseats:
+        diff = endseats - startseats
+        print ('    SNP got list:',snplist)
+        print ('   ',list_party,' UP by:',diff)
+        print ('    Using votes:',args.n)
+    #pp = pprint.PrettyPrinter(indent=4)
+    #pp.pprint(votes)
     #pp = pprint.PrettyPrinter(indent=4)
     #pp.pprint(votes)
 
